@@ -1,0 +1,93 @@
+<html>
+<head>
+  <script src="proj4_v2_3_3.js"></script>
+  <script src="papaparse_v4_1_0.min.js"></script>
+  <script>
+    //default projection is KKJ2 for part of Finland
+    var projection = '+proj=tmerc +lat_0=0 +lon_0=24 +k=1 +x_0=2500000 +y_0=0 +ellps=intl +units=m +no_defs ';
+
+    // Check for the various File API support.
+    if (window.File && window.FileReader && window.FileList && window.Blob) {
+      // Great success! All the File APIs are supported.
+    } else {
+      alert('The File APIs are not fully supported in this browser.');
+    }
+  </script>
+</head>
+<body style="margin-left: 20px;background-color: #d3d3d3;">
+  <h2>Convert stops.txt file of GTFS data from WGS84 to other CRS</h1>
+  <h3>Step 1. Specify the projection you want to convert to</h3>
+  <p>
+    <textarea cols="30" rows="4" id="projection_arg">+proj=tmerc +lat_0=0 +lon_0=24 +k=1 +x_0=2500000 +y_0=0 +ellps=intl +units=m +no_defs</textarea>
+    <br>
+  <input type="button" id="setProjection" value="Set Projection"> 
+  </p>
+  <hr>
+  <h3>Step 2. Select the targeted stops.txt file</h3>
+  <p>
+    <input type="file" id="files" name="files[]" >
+    <output id="list"></output>
+  </p>
+  <hr>
+  <h3>Step 3. Click the button to start conversion</h3>
+  <p>the original file won't be changed. A new file will be downloaded.</p>
+  <input type="button" id="startBtn" value="Start Parsing">
+</body>
+<script>
+var f;
+
+function handleProjectionBtn(evt) {
+  projection_candidate = document.getElementById('projection_arg').value;
+  console.log("proj: "+projection_candidate);
+  if(projection_candidate) projection = projection_candidate;
+}
+
+function handleFileSelect(evt) {
+    var files = evt.target.files; // FileList object
+
+    // files is a FileList of File objects. List some properties.
+    var output = [];
+    f = files[0];
+      output.push('<li><strong>', escape(f.name), '</strong> (', f.type || 'n/a', ') - ',
+                  f.size, ' bytes, last modified: ',
+                  f.lastModifiedDate ? f.lastModifiedDate.toLocaleDateString() : 'n/a',
+                  '</li>');
+
+    document.getElementById('list').innerHTML = '<ul>' + output.join('') + '</ul>';
+  }
+
+  function handleParseBtn(evt) {
+    if(!f) alert("Please select file first.");
+    else Papa.parse(f, {
+	complete: function(results) {
+		console.log("Finished:", results.data);
+		replaceCoordinatesInData(results.data);
+                var csv = Papa.unparse(results.data);
+		uriContent = "data:application/octet-stream," + encodeURIComponent(csv);
+		location.href = uriContent;
+	}
+    });
+  }
+
+  function replaceCoordinatesInData(data) {
+    var stop_lat_index = data[0].indexOf("stop_lat");
+    var stop_lon_index = data[0].indexOf("stop_lon");
+    console.log(""+stop_lat_index+" "+stop_lon_index);
+    for(var i=1, stopUnite; stopUnit=data[i]; i++){
+      var lat = parseFloat(stopUnit[stop_lat_index]);
+      var lon = parseFloat(stopUnit[stop_lon_index]);
+      converted = proj4(projection, [lon,lat]);
+      stopUnit[stop_lat_index]=converted[1];
+      stopUnit[stop_lon_index]=converted[0];
+    }
+  }
+
+  
+  document.getElementById('files').addEventListener('change', handleFileSelect, false);
+  document.getElementById('startBtn').addEventListener('click', handleParseBtn, false);
+  document.getElementById('setProjection').addEventListener('click', handleProjectionBtn, false);
+</script>
+</html>
+
+
+
