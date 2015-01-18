@@ -12,6 +12,8 @@
     } else {
       alert('The File APIs are not fully supported in this browser.');
     }
+  
+
   </script>
 </head>
 <body style="margin-left: 20px;background-color: #d3d3d3;">
@@ -72,8 +74,13 @@ function handleFileSelect(evt) {
   function replaceCoordinatesInData(data) {
     var stop_lat_index = data[0].indexOf("stop_lat");
     var stop_lon_index = data[0].indexOf("stop_lon");
-    console.log(""+stop_lat_index+" "+stop_lon_index);
+    console.log("stop_lat_index="+stop_lat_index+" stop_lon_index="+stop_lon_index);
     for(var i=1, stopUnite; stopUnit=data[i]; i++){
+      if (i==(data.length-1) && stopUnit.length!=data[0].length) {
+         console.log("last record is invalid, will be deleted now.");
+         data.splice(i,1);
+	 break;
+      }
       var lat = parseFloat(stopUnit[stop_lat_index]);
       var lon = parseFloat(stopUnit[stop_lon_index]);
       converted = proj4(projection, [lon,lat]);
